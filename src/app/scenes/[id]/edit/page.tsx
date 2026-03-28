@@ -5,6 +5,7 @@ import { db } from '@/db'
 import { scenes } from '@/db/schema'
 import { requireAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
+import { SceneForm } from '@/components/scene-form'
 import { updateScene } from '../../actions'
 
 export default async function EditScenePage({
@@ -37,15 +38,7 @@ export default async function EditScenePage({
         </Link>
       </div>
 
-      <form action={action} className="flex flex-1 flex-col gap-4">
-        <textarea
-          name="message"
-          defaultValue={scene.message}
-          className="min-h-96 flex-1 resize-none rounded-lg border border-border bg-background p-4 font-mono text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-          autoFocus
-        />
-        <Button type="submit" size="lg">Save Scene</Button>
-      </form>
+      <SceneForm action={action} defaultValue={scene.message} />
     </main>
   )
 }

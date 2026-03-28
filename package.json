@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "bootstrap": "brew install libpq doctl && echo 'export PATH=/opt/homebrew/opt/libpq/bin:$PATH' >> ~/.zshrc && doctl auth init",
+    "clean": "rm -rf .next",
     "dev": "next dev",
     "build": "echo no-op",
     "start": "next dev",

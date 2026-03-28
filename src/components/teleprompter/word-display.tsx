@@ -38,7 +38,7 @@ export function WordDisplay({ words, currentIndex, progress }: WordDisplayProps)
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-20 bg-gradient-to-t from-zinc-950 to-transparent" />
 
       <div className="h-full overflow-y-auto px-8 py-24 md:px-16 lg:px-24">
-        <p className="mx-auto max-w-4xl text-3xl leading-relaxed md:text-4xl">
+        <p className="mx-auto max-w-4xl text-6xl leading-relaxed md:text-7xl">
           {words.map((word, index) => {
             const isCurrent = index === currentIndex
             const isSpoken = index < currentIndex

@@ -183,7 +183,7 @@ export function AnalyticsModal({ open, analytics, onClose }: AnalyticsModalProps
           onClick={onClose}
           className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
         >
-          Try Again
+          Close
         </button>
       </div>
 

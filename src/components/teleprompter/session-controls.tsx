@@ -1,9 +1,10 @@
 "use client"
 
-import { Pause, Play, Square } from "lucide-react"
+import { Pause, Play, Square, RotateCcw } from "lucide-react"
 
 interface SessionControlsProps {
   isReading: boolean
+  isFinished: boolean
   isPaused: boolean
   elapsedSeconds: number
   wordsPerMinute: number
@@ -11,6 +12,7 @@ interface SessionControlsProps {
   onPause: () => void
   onResume: () => void
   onStop: () => void
+  onRestart: () => void
 }
 
 function formatTime(seconds: number): string {
@@ -21,6 +23,7 @@ function formatTime(seconds: number): string {
 
 export function SessionControls({
   isReading,
+  isFinished,
   isPaused,
   elapsedSeconds,
   wordsPerMinute,
@@ -28,6 +31,7 @@ export function SessionControls({
   onPause,
   onResume,
   onStop,
+  onRestart,
 }: SessionControlsProps) {
   if (!isReading) return null
 
@@ -41,18 +45,30 @@ export function SessionControls({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={isPaused ? onResume : onPause}
-            className="rounded-lg bg-zinc-800 p-2 text-zinc-100 transition-colors hover:bg-zinc-700"
-          >
-            {isPaused ? <Play className="size-5" /> : <Pause className="size-5" />}
-          </button>
-          <button
-            onClick={onStop}
-            className="rounded-lg bg-zinc-800 p-2 text-red-400 transition-colors hover:bg-zinc-700"
-          >
-            <Square className="size-5" />
-          </button>
+          {isFinished ? (
+            <button
+              onClick={onRestart}
+              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <RotateCcw className="size-4" />
+              Start Over
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={isPaused ? onResume : onPause}
+                className="rounded-lg bg-zinc-800 p-2 text-zinc-100 transition-colors hover:bg-zinc-700"
+              >
+                {isPaused ? <Play className="size-5" /> : <Pause className="size-5" />}
+              </button>
+              <button
+                onClick={onStop}
+                className="rounded-lg bg-zinc-800 p-2 text-red-400 transition-colors hover:bg-zinc-700"
+              >
+                <Square className="size-5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

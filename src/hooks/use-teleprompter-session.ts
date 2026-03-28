@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@google/genai'
 import { createGeminiLiveSession } from '@/lib/gemini-live-client'
-import { PositionTracker } from '@/lib/gemini-position-tracker'
 import { WordMatcher } from '@/lib/word-matcher'
 import { WordTracker } from '@/lib/word-tracker'
 import { AudioCapture } from '@/lib/audio-capture'
@@ -11,7 +10,6 @@ import type {
   SessionPhase,
   CoachingMessage,
   SessionAnalytics,
-  GeminiPositionUpdate,
 } from '@/lib/types'
 
 export function useTeleprompterSession() {
@@ -31,43 +29,26 @@ export function useTeleprompterSession() {
   const audioRef = useRef<AudioCapture | null>(null)
   const wordTrackerRef = useRef<WordTracker | null>(null)
   const matcherRef = useRef<WordMatcher | null>(null)
-  const posTrackerRef = useRef<PositionTracker | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef(0)
+  const scriptRef = useRef('')
   const coachingRef = useRef<CoachingMessage[]>([])
-  const paceHistoryRef = useRef<{ timeSeconds: number; wpm: number }[]>([])
 
-  const addCoaching = useCallback((type: CoachingMessage['type'], message: string, data?: Record<string, unknown>) => {
+  const addCoaching = useCallback((type: CoachingMessage['type'], message: string) => {
     const msg: CoachingMessage = {
       id: crypto.randomUUID(),
       type,
       message,
-      data,
       timestamp: Date.now(),
     }
     coachingRef.current = [...coachingRef.current, msg]
     setCoachingMessages([...coachingRef.current])
   }, [])
 
-  const feedSpeakerPosition = useCallback((index: number) => {
-    const tracker = wordTrackerRef.current
-    if (!tracker) return
-    tracker.updateSpeakerPosition(index)
-  }, [])
-
-  const handleFlashUpdate = useCallback((update: GeminiPositionUpdate) => {
-    console.log('[FLASH]', update.wordIndex, update.coaching?.type ?? '')
-    matcherRef.current?.correctPosition(update.wordIndex)
-    feedSpeakerPosition(update.wordIndex)
-
-    if (update.coaching) {
-      addCoaching(update.coaching.type, update.coaching.message, update.coaching.data)
-    }
-  }, [feedSpeakerPosition, addCoaching])
-
   const start = useCallback(async (script: string) => {
     setPhase('connecting')
     setError(null)
+    scriptRef.current = script
 
     const scriptWords = script.trim().split(/\s+/)
     setWords(scriptWords)
@@ -79,7 +60,6 @@ export function useTeleprompterSession() {
     setProgress(0)
     setIsPaused(false)
     coachingRef.current = []
-    paceHistoryRef.current = []
 
     try {
       const audio = new AudioCapture()
@@ -91,7 +71,6 @@ export function useTeleprompterSession() {
       const { apiKey } = await res.json()
       if (!apiKey) throw new Error('Failed to get API key')
 
-      // WordTracker drives the UI — smooth animation via rAF
       const wordTracker = new WordTracker(scriptWords)
       wordTracker.onChange = (index) => {
         setCurrentWordIndex(index)
@@ -104,25 +83,18 @@ export function useTeleprompterSession() {
       const matcher = new WordMatcher(scriptWords)
       matcherRef.current = matcher
 
-      const posTracker = new PositionTracker(apiKey, scriptWords, handleFlashUpdate)
-      posTrackerRef.current = posTracker
-      posTracker.start()
-
       const session = await createGeminiLiveSession(
         apiKey,
-        script,
         (text) => {
-          posTracker.addTranscription(text)
           const idx = matcher.addChunk(text)
           if (idx !== null) {
-            feedSpeakerPosition(idx)
+            wordTracker.updateSpeakerPosition(idx)
           }
         },
         (coachingText) => {
           addCoaching('encouragement', coachingText)
         },
         (err) => {
-          // Don't show error for normal close — session can be reconnected
           if (!err.message.includes('1000')) {
             console.error('[LIVE] Error:', err.message)
             setError(err.message)
@@ -142,7 +114,7 @@ export function useTeleprompterSession() {
             audio: { data: base64, mimeType: 'audio/pcm;rate=16000' },
           })
         } catch {
-          // Session may have closed, ignore send errors
+          // Session may have closed
         }
       }
 
@@ -157,7 +129,7 @@ export function useTeleprompterSession() {
       setError(err instanceof Error ? err.message : 'Connection failed')
       setPhase('idle')
     }
-  }, [handleFlashUpdate, feedSpeakerPosition, addCoaching])
+  }, [addCoaching])
 
   const pause = useCallback(() => {
     audioRef.current?.pause()
@@ -173,7 +145,6 @@ export function useTeleprompterSession() {
     audioRef.current?.stop()
     audioRef.current = null
     wordTrackerRef.current?.stop()
-    posTrackerRef.current?.stop()
     sessionRef.current?.close()
     sessionRef.current = null
 
@@ -187,7 +158,7 @@ export function useTeleprompterSession() {
     setAnalytics({
       totalDurationSeconds: Math.round(elapsed),
       averageWPM: wordTrackerRef.current?.getAverageWPM() ?? 0,
-      paceOverTime: paceHistoryRef.current,
+      paceOverTime: [],
       fillerWords: [],
       offScriptMoments: [],
       recommendations: coachingRef.current
@@ -197,7 +168,6 @@ export function useTeleprompterSession() {
 
     wordTrackerRef.current = null
     matcherRef.current = null
-    posTrackerRef.current = null
     setVolume(0)
     setIsPaused(false)
     setPhase('finished')
@@ -212,11 +182,19 @@ export function useTeleprompterSession() {
     setError(null)
   }, [])
 
+  const restart = useCallback(() => {
+    const savedScript = scriptRef.current
+    if (savedScript) {
+      start(savedScript)
+    } else {
+      reset()
+    }
+  }, [start, reset])
+
   useEffect(() => {
     return () => {
       audioRef.current?.stop()
       wordTrackerRef.current?.stop()
-      posTrackerRef.current?.stop()
       sessionRef.current?.close()
       if (timerRef.current) clearInterval(timerRef.current)
     }
@@ -239,5 +217,6 @@ export function useTeleprompterSession() {
     resume,
     stop,
     reset,
+    restart,
   }
 }

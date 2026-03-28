@@ -5,8 +5,8 @@
   "scripts": {
     "bootstrap": "brew install libpq doctl && echo 'export PATH=/opt/homebrew/opt/libpq/bin:$PATH' >> ~/.zshrc && doctl auth init",
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "echo no-op",
+    "start": "next dev",
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

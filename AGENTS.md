@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # Env File
 
 When running commands on your behalf, do not hardcode env secrets in the command line. Read them from .env.local, so the command line remains clean from secrets.
+
+# Deployment
+
+After you make a change to the code, to not add-commit it and do not deploy. I will ask to deploy explicitly when needed.

@@ -23,11 +23,10 @@ function levenshtein(a: string, b: string): number {
 
 function fuzzyMatch(spoken: string, script: string): boolean {
   if (spoken === script) return true
-  if (spoken.length < 3 || script.length < 3) return spoken === script
-  if (script.startsWith(spoken) || spoken.startsWith(script)) return true
+  if (spoken.length < 4 || script.length < 4) return spoken === script
   const maxLen = Math.max(spoken.length, script.length)
   const dist = levenshtein(spoken, script)
-  return dist / maxLen <= 0.5
+  return dist / maxLen <= 0.35
 }
 
 export class WordMatcher {
@@ -57,19 +56,11 @@ export class WordMatcher {
       const spoken = normalize(raw)
       if (!spoken || spoken.length < 2) continue
 
-      const fwdEnd = Math.min(this.position + 15, this.scriptNorm.length)
-      const window = this.scriptNorm.slice(this.position, fwdEnd)
-      console.log(`[MATCHER] "${spoken}" vs script[${this.position}..${fwdEnd - 1}]:`, window.join(', '))
+      const fwdEnd = Math.min(this.position + 3, this.scriptNorm.length)
 
       let found = false
       for (let i = this.position; i < fwdEnd; i++) {
         if (fuzzyMatch(spoken, this.scriptNorm[i])) {
-          const jump = i - this.position
-          if (jump > 3) {
-            console.log(`[MATCHER] SKIP "${spoken}" ~ "${this.scriptNorm[i]}" at ${i} (jump=${jump} > 3)`)
-            continue
-          }
-          console.log(`[MATCHER] MATCH "${spoken}" ~ "${this.scriptNorm[i]}" at ${i}`)
           this.position = i + 1
           moved = true
           found = true

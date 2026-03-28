@@ -53,18 +53,9 @@ export function WordDisplay({ words, currentIndex, progress, fontSize = 72, onWo
                 className={cn(
                   'inline-block px-1 py-0.5 transition-all duration-300',
                   isSpoken && 'text-zinc-600',
-                  isCurrent && 'scale-105 font-bold text-white',
-                  !isSpoken && !isCurrent && 'text-zinc-400',
+                  !isSpoken && 'text-zinc-400',
                   onWordClick && 'cursor-pointer hover:opacity-80'
                 )}
-                style={
-                  isCurrent
-                    ? {
-                        textShadow:
-                          '0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.3)',
-                      }
-                    : undefined
-                }
               >
                 {word}{' '}
               </span>

@@ -33,7 +33,7 @@ export function SceneForm({ action, defaultValue = '' }: SceneFormProps) {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         className="min-h-96 flex-1 resize-none rounded-lg border border-border bg-background p-4 font-mono text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-        placeholder="Write your scene text here…"
+        placeholder="Describe the scenario and goal. Example: You are a pizza place worker. Goal: the user must successfully order a large pepperoni pizza for delivery."
         autoFocus
       />
       <div className="flex items-center justify-between">

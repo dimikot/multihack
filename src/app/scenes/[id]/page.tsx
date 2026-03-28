@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { db } from '@/db'
 import { scenes } from '@/db/schema'
 import { requireAuth } from '@/lib/auth'
-import { SceneTeleprompterSession } from '@/components/teleprompter/scene-teleprompter-session'
+import { SceneConversationSession } from '@/components/teleprompter/scene-conversation-session'
 
 export default async function ScenePage({
   params,
@@ -31,7 +31,7 @@ export default async function ScenePage({
       >
         <ArrowLeft className="size-5" />
       </Link>
-      <SceneTeleprompterSession script={scene.message} />
+      <SceneConversationSession script={scene.message} />
     </div>
   )
 }

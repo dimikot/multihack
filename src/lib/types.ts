@@ -35,3 +35,10 @@ export interface SessionAnalytics {
 
 export type SessionPhase = 'idle' | 'connecting' | 'reading' | 'finished'
 
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'gemini'
+  text: string
+  timestamp: number
+}
+

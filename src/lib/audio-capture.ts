@@ -38,20 +38,13 @@ export class AudioCapture {
     const silentSink = this.context.createGain()
     silentSink.gain.value = 0
 
-    let chunkCount = 0
     this.workletNode.port.onmessage = (event: MessageEvent) => {
       if (this.paused) return
       if (event.data.event !== 'chunk') return
 
       const int16 = new Int16Array(event.data.data)
-      chunkCount++
-
       const rms = this.computeRMS(int16)
       this.onVolume?.(Math.min(1, rms * 5))
-
-      if (chunkCount <= 3 || chunkCount % 50 === 0) {
-        console.log(`[AUDIO] Chunk #${chunkCount}, rms=${rms.toFixed(4)}`)
-      }
 
       const base64 = this.int16ToBase64(int16)
       this.onData?.(base64)
@@ -97,10 +90,6 @@ export class AudioCapture {
 
   private int16ToBase64(int16: Int16Array): string {
     const bytes = new Uint8Array(int16.buffer, int16.byteOffset, int16.byteLength)
-    let binary = ''
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i])
-    }
-    return btoa(binary)
+    return btoa(String.fromCharCode(...bytes))
   }
 }

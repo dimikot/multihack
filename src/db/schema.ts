@@ -6,3 +6,10 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
+
+export const scenes = pgTable('scenes', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  message: text('message').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})

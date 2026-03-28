@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getSession } from '@/lib/session'
 import { signIn, signOut } from './actions'
 import { Button } from '@/components/ui/button'
@@ -27,11 +28,14 @@ export default async function Home() {
                 Signed in as{' '}
                 <span className="font-medium text-foreground">{user.email}</span>
               </p>
-              <form action={signOut}>
-                <Button variant="outline" type="submit">
-                  Log out
-                </Button>
-              </form>
+              <div className="flex gap-3">
+                <Link href="/scenes">
+                  <Button size="lg">Go to Scenes</Button>
+                </Link>
+                <form action={signOut}>
+                  <Button variant="outline" size="lg" type="submit">Log out</Button>
+                </form>
+              </div>
             </div>
           ) : (
             <form action={signIn}>

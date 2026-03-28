@@ -17,7 +17,7 @@ export default async function Home() {
             AI-Powered
           </p>
 
-          <h1 className="text-6xl font-bold leading-tight tracking-tight text-zinc-900">
+          <h1 className="text-5xl font-bold leading-tight tracking-tight text-zinc-900">
             Read your script.<br />
             Track your pace.<br />
             Nail the take.
@@ -41,7 +41,7 @@ export default async function Home() {
 
         {/* Right — illustration */}
         <div className="hidden flex-shrink-0 lg:block">
-          <img src="/hero.png" alt="" width={440} height={360} />
+          <img src="/hero.png" alt="" width={380} />
         </div>
 
       </div>

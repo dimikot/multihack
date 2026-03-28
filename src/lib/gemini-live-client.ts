@@ -38,7 +38,7 @@ export async function createGeminiLiveSession(
           startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
           endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
           prefixPaddingMs: 0,
-          silenceDurationMs: 300,
+          silenceDurationMs: 200,
         },
       },
       systemInstruction: `You are roleplaying a scenario with the user. Stay fully in character as the other party described in the scenario.

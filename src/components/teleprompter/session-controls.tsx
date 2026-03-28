@@ -3,12 +3,14 @@
 import { Pause, Play, Square, RotateCcw } from "lucide-react"
 
 interface SessionControlsProps {
+  isIdle: boolean
   isReading: boolean
   isFinished: boolean
   isPaused: boolean
   elapsedSeconds: number
   wordsPerMinute: number
   progress: number
+  onStart: () => void
   onPause: () => void
   onResume: () => void
   onStop: () => void
@@ -22,18 +24,20 @@ function formatTime(seconds: number): string {
 }
 
 export function SessionControls({
+  isIdle,
   isReading,
   isFinished,
   isPaused,
   elapsedSeconds,
   wordsPerMinute,
   progress,
+  onStart,
   onPause,
   onResume,
   onStop,
   onRestart,
 }: SessionControlsProps) {
-  if (!isReading) return null
+  if (!isIdle && !isReading) return null
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
@@ -45,7 +49,15 @@ export function SessionControls({
         </div>
 
         <div className="flex items-center gap-2">
-          {isFinished ? (
+          {isIdle ? (
+            <button
+              onClick={onStart}
+              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <Play className="size-4" />
+              Play
+            </button>
+          ) : isFinished ? (
             <button
               onClick={onRestart}
               className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"

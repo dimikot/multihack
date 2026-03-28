@@ -36,6 +36,10 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
 
   const [showAnalytics, setShowAnalytics] = useState(false)
 
+  const handlePlay = useCallback(() => {
+    if (phase === 'idle') start(script)
+  }, [phase, start, script])
+
   const togglePause = useCallback(() => {
     if (phase !== 'reading') return
     isPaused ? resume() : pause()
@@ -46,19 +50,17 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
       if (e.code !== 'Space') return
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
       e.preventDefault()
+      if (phase === 'idle') { handlePlay(); return }
       togglePause()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [togglePause])
+  }, [phase, handlePlay, togglePause])
 
   useEffect(() => {
     if (phase !== 'finished') setShowAnalytics(false)
   }, [phase])
 
-  useEffect(() => {
-    if (phase === 'idle') start(script)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === 'connecting') {
     return (
@@ -81,7 +83,11 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
 
       <PaceGlow messages={coachingMessages} />
 
-      <WordDisplay words={words} currentIndex={currentWordIndex} progress={progress} />
+      <WordDisplay
+        words={phase === 'idle' ? script.trim().split(/\s+/) : words}
+        currentIndex={phase === 'idle' ? -1 : currentWordIndex}
+        progress={progress}
+      />
 
       <button
         onClick={() => phase === 'finished' && setShowAnalytics(true)}
@@ -102,12 +108,14 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
       )}
 
       <SessionControls
+        isIdle={phase === 'idle'}
         isReading={phase === 'reading' || phase === 'finished'}
         isFinished={phase === 'finished'}
         isPaused={isPaused}
         elapsedSeconds={elapsedSeconds}
         wordsPerMinute={wordsPerMinute}
         progress={progress}
+        onStart={handlePlay}
         onPause={pause}
         onResume={resume}
         onStop={stop}

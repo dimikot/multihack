@@ -18,15 +18,12 @@ export default async function Home() {
           </p>
 
           <h1 className="text-5xl font-bold leading-tight tracking-tight text-zinc-900">
-            Read your script.<br />
-            Track your pace.<br />
-            Nail the take.
+            Practice any conversation.<br />
+            <span className="text-zinc-400">Before it actually matters.</span>
           </h1>
 
           <p className="max-w-md text-lg leading-relaxed text-zinc-500">
-            An AI teleprompter that listens as you speak, follows along in real
-            time, and keeps you on pace — so you can focus on delivering, not
-            reading.
+            AI roleplay that puts you in real scenarios — job interviews, sales calls, difficult talks — and tells you how you did.
           </p>
 
           <form action={signIn} className="mt-2">

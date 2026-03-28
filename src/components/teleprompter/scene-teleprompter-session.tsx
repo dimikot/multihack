@@ -36,10 +36,12 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
   } = useTeleprompterSession()
 
   const [showAnalytics, setShowAnalytics] = useState(false)
-  const [fontSize, setFontSize] = useState(() => {
-    if (typeof window === 'undefined') return 72
-    return Number(localStorage.getItem('teleprompter-font-size') ?? 72)
-  })
+  const [fontSize, setFontSize] = useState(72)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('teleprompter-font-size')
+    if (saved) setFontSize(Number(saved))
+  }, [])
 
   const handleFontSizeChange = useCallback((size: number) => {
     setFontSize(size)

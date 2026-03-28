@@ -86,6 +86,7 @@ export function useTeleprompterSession() {
       const session = await createGeminiLiveSession(
         apiKey,
         (text) => {
+          console.log('[TRANSCRIPTION]', text)
           const idx = matcher.addChunk(text)
           if (idx !== null) {
             wordTracker.updateSpeakerPosition(idx)
@@ -103,12 +104,7 @@ export function useTeleprompterSession() {
       )
       sessionRef.current = session
 
-      let chunkCount = 0
       audio.onData = (base64) => {
-        chunkCount++
-        if (chunkCount % 50 === 1) {
-          console.log(`[AUDIO] Chunk #${chunkCount}`)
-        }
         try {
           session.sendRealtimeInput({
             audio: { data: base64, mimeType: 'audio/pcm;rate=16000' },

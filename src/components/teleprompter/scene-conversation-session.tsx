@@ -35,6 +35,10 @@ export function SceneConversationSession({ script, goals }: Props) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-6">
         <div className="flex w-full max-w-lg flex-col gap-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Ready to practice?</h1>
+            <p className="mt-1 text-sm text-zinc-500">The AI will play the other person. Speak naturally — it responds in real time. Complete all goals to finish the session.</p>
+          </div>
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-zinc-500">Scenario</p>
             <p className="text-sm leading-relaxed text-zinc-300">{script}</p>
@@ -56,8 +60,9 @@ export function SceneConversationSession({ script, goals }: Props) {
             onClick={() => start(script)}
             className="flex h-14 items-center justify-center rounded-2xl bg-blue-600 text-base font-semibold text-white transition-all hover:bg-blue-500 active:scale-95"
           >
-            Start Conversation
+            Start Conversation →
           </button>
+          <p className="text-center text-xs text-zinc-600">Make sure your microphone is allowed in the browser</p>
         </div>
       </div>
     )

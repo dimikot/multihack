@@ -137,8 +137,8 @@ export function useConversationSession() {
         (text) => {
           const now = Date.now()
 
-          // Detect goal completions: GOAL_DONE:N
-          const goalMatches = [...text.matchAll(/GOAL_DONE:(\d+)/g)]
+          // Detect goal completions: GOAL_DONE:N (handles audio transcription variants like "goal done 1", "Goal_done: 2", etc.)
+          const goalMatches = [...text.matchAll(/GOAL[_\s]*DONE[:\s]*(\d+)/gi)]
           if (goalMatches.length > 0) {
             const next = new Set(completedGoalsRef.current)
             for (const m of goalMatches) {
@@ -149,7 +149,7 @@ export function useConversationSession() {
           }
 
           // Strip GOAL_DONE tags from displayed text
-          const cleanText = text.replace(/GOAL_DONE:\d+\s*/g, '').trim()
+          const cleanText = text.replace(/GOAL[_\s]*DONE[:\s]*\d+\s*/gi, '').trim()
 
           if (text.includes('SESSION_COMPLETE:')) {
             const result = text.split('SESSION_COMPLETE:')[1]?.trim()

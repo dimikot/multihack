@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Search, SlidersHorizontal, LayoutGrid, List, MoreHorizontal, X } from 'lucide-react'
 import { SceneForm } from '@/components/scene-form'
 import { createScene, updateScene, deleteScene } from './actions'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface Scene {
   id: number
@@ -54,6 +54,7 @@ function Modal({
 }
 
 export function SceneList({ scenes }: { scenes: Scene[] }) {
+  const router = useRouter()
   const [query, setQuery] = useState('')
   const [activeMenu, setActiveMenu] = useState<number | null>(null)
   const [showNew, setShowNew] = useState(false)
@@ -107,10 +108,10 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
       ) : (
         <div className="grid w-full auto-rows-[280px] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((scene) => (
-            <Link
+            <div
               key={scene.id}
-              href={`/scenes/${scene.id}`}
-              className="group relative flex flex-col overflow-hidden rounded-xl border border-accents-2 bg-white p-5 no-underline transition-shadow hover:shadow-md"
+              onClick={() => activeMenu === null && router.push(`/scenes/${scene.id}`)}
+              className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-accents-2 bg-white p-5 transition-shadow hover:shadow-md"
             >
               {activeMenu === scene.id ? (
                 <div
@@ -151,6 +152,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
                       className="pointer-events-auto flex size-6 items-center justify-center rounded-md text-accents-4 hover:text-foreground"
                       onClick={(e) => {
                         e.preventDefault()
+                        e.stopPropagation()
                         setActiveMenu(scene.id)
                       }}
                     >
@@ -165,7 +167,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/80 to-transparent" />
                 </>
               )}
-            </Link>
+            </div>
           ))}
         </div>
       )}

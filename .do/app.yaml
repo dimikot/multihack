@@ -8,24 +8,8 @@ services:
       branch: main
       deploy_on_push: false
     build_command: npm install --include=dev
-    run_command: npm run dev
+    run_command: NODE_ENV=development npm run dev
     environment_slug: node-js
     instance_size_slug: apps-d-4vcpu-8gb
     instance_count: 1
     http_port: 3000
-    envs:
-      - key: DATABASE_URL
-        scope: RUN_AND_BUILD_TIME
-        type: SECRET
-      - key: WORKOS_API_KEY
-        scope: RUN_AND_BUILD_TIME
-        type: SECRET
-      - key: WORKOS_CLIENT_ID
-        scope: RUN_AND_BUILD_TIME
-        type: SECRET
-      - key: NEXT_PUBLIC_APP_URL
-        scope: RUN_AND_BUILD_TIME
-        value: https://multihack-3jjbk.ondigitalocean.app
-      - key: NODE_ENV
-        scope: RUN_AND_BUILD_TIME
-        value: development

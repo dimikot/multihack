@@ -1,0 +1,36 @@
+<svg width="440" height="360" viewBox="0 0 440 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Script / paper -->
+  <rect x="80" y="40" width="200" height="260" rx="12" fill="#f4f4f5" />
+  <rect x="80" y="40" width="200" height="260" rx="12" stroke="#e4e4e7" stroke-width="2" />
+
+  <!-- Text lines on paper -->
+  <rect x="108" y="80" width="140" height="10" rx="5" fill="#d4d4d8" />
+  <rect x="108" y="104" width="120" height="10" rx="5" fill="#d4d4d8" />
+  <rect x="108" y="128" width="140" height="10" rx="5" fill="#d4d4d8" />
+  <rect x="108" y="152" width="100" height="10" rx="5" fill="#d4d4d8" />
+  <rect x="108" y="176" width="130" height="10" rx="5" fill="#d4d4d8" />
+  <rect x="108" y="200" width="110" height="10" rx="5" fill="#d4d4d8" />
+  <rect x="108" y="224" width="140" height="10" rx="5" fill="#d4d4d8" />
+  <rect x="108" y="248" width="90" height="10" rx="5" fill="#d4d4d8" />
+
+  <!-- Highlight bar — current line -->
+  <rect x="100" y="122" width="160" height="24" rx="6" fill="#818cf8" opacity="0.25" />
+  <rect x="108" y="128" width="140" height="10" rx="5" fill="#6366f1" />
+
+  <!-- Microphone stand -->
+  <rect x="298" y="160" width="8" height="120" rx="4" fill="#a1a1aa" />
+  <rect x="274" y="272" width="56" height="8" rx="4" fill="#a1a1aa" />
+
+  <!-- Microphone body -->
+  <rect x="282" y="90" width="40" height="80" rx="20" fill="#3f3f46" />
+
+  <!-- Mic grille lines -->
+  <line x1="282" y1="118" x2="322" y2="118" stroke="#71717a" stroke-width="2" />
+  <line x1="282" y1="130" x2="322" y2="130" stroke="#71717a" stroke-width="2" />
+  <line x1="282" y1="142" x2="322" y2="142" stroke="#71717a" stroke-width="2" />
+
+  <!-- Sound waves -->
+  <path d="M334 110 Q348 130 334 150" stroke="#6366f1" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M344 100 Q364 130 344 160" stroke="#6366f1" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.6" />
+  <path d="M354 90 Q380 130 354 170" stroke="#6366f1" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.3" />
+</svg>

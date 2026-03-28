@@ -2,17 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@google/genai'
-import {
-  createGeminiSession,
-  createWordMatcher,
-  type TranscriptionUpdate,
-} from '@/lib/gemini-live-client'
+import { createGeminiLiveSession } from '@/lib/gemini-live-client'
+import { PositionTracker } from '@/lib/gemini-position-tracker'
+import { WordMatcher } from '@/lib/word-matcher'
 import { WordTracker } from '@/lib/word-tracker'
 import { AudioCapture } from '@/lib/audio-capture'
 import type {
   SessionPhase,
   CoachingMessage,
   SessionAnalytics,
+  GeminiPositionUpdate,
 } from '@/lib/types'
 
 export function useTeleprompterSession() {
@@ -30,50 +29,41 @@ export function useTeleprompterSession() {
 
   const sessionRef = useRef<Session | null>(null)
   const audioRef = useRef<AudioCapture | null>(null)
-  const trackerRef = useRef<WordTracker | null>(null)
-  const matcherRef = useRef<ReturnType<typeof createWordMatcher> | null>(null)
+  const wordTrackerRef = useRef<WordTracker | null>(null)
+  const matcherRef = useRef<WordMatcher | null>(null)
+  const posTrackerRef = useRef<PositionTracker | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef(0)
   const coachingRef = useRef<CoachingMessage[]>([])
   const paceHistoryRef = useRef<{ timeSeconds: number; wpm: number }[]>([])
-  const outputBufferRef = useRef('')
 
-  const handleTranscription = useCallback((update: TranscriptionUpdate) => {
-    const tracker = trackerRef.current
-    const matcher = matcherRef.current
-    if (!tracker || !matcher) return
-
-    if (update.inputText) {
-      const matchedIndex = matcher.matchTranscription(update.inputText)
-      if (matchedIndex !== null) {
-        tracker.updatePosition(matchedIndex)
-        setCurrentWordIndex(matchedIndex)
-        setWordsPerMinute(tracker.getAverageWPM())
-        setProgress(tracker.getProgress() * 100)
-
-        const elapsed = (Date.now() - startTimeRef.current) / 1000
-        paceHistoryRef.current.push({
-          timeSeconds: Math.round(elapsed),
-          wpm: tracker.getAverageWPM(),
-        })
-      }
+  const addCoaching = useCallback((type: CoachingMessage['type'], message: string, data?: Record<string, unknown>) => {
+    const msg: CoachingMessage = {
+      id: crypto.randomUUID(),
+      type,
+      message,
+      data,
+      timestamp: Date.now(),
     }
-
-    if (update.outputText) {
-      outputBufferRef.current += update.outputText
-      if (outputBufferRef.current.length > 5) {
-        const msg: CoachingMessage = {
-          id: crypto.randomUUID(),
-          type: 'encouragement',
-          message: outputBufferRef.current.trim(),
-          timestamp: Date.now(),
-        }
-        coachingRef.current = [...coachingRef.current, msg]
-        setCoachingMessages([...coachingRef.current])
-        outputBufferRef.current = ''
-      }
-    }
+    coachingRef.current = [...coachingRef.current, msg]
+    setCoachingMessages([...coachingRef.current])
   }, [])
+
+  const feedSpeakerPosition = useCallback((index: number) => {
+    const tracker = wordTrackerRef.current
+    if (!tracker) return
+    tracker.updateSpeakerPosition(index)
+  }, [])
+
+  const handleFlashUpdate = useCallback((update: GeminiPositionUpdate) => {
+    console.log('[FLASH]', update.wordIndex, update.coaching?.type ?? '')
+    matcherRef.current?.correctPosition(update.wordIndex)
+    feedSpeakerPosition(update.wordIndex)
+
+    if (update.coaching) {
+      addCoaching(update.coaching.type, update.coaching.message, update.coaching.data)
+    }
+  }, [feedSpeakerPosition, addCoaching])
 
   const start = useCallback(async (script: string) => {
     setPhase('connecting')
@@ -90,52 +80,69 @@ export function useTeleprompterSession() {
     setIsPaused(false)
     coachingRef.current = []
     paceHistoryRef.current = []
-    outputBufferRef.current = ''
 
     try {
-      console.log('[START] Starting audio capture...')
       const audio = new AudioCapture()
       audio.onVolume = setVolume
       audioRef.current = audio
       await audio.start()
-      console.log('[START] Audio capture running')
 
-      console.log('[START] Fetching API key...')
       const res = await fetch('/api/gemini-session')
       const { apiKey } = await res.json()
       if (!apiKey) throw new Error('Failed to get API key')
 
-      const tracker = new WordTracker(scriptWords)
-      trackerRef.current = tracker
-      tracker.start()
+      // WordTracker drives the UI — smooth animation via rAF
+      const wordTracker = new WordTracker(scriptWords)
+      wordTracker.onChange = (index) => {
+        setCurrentWordIndex(index)
+        setProgress(wordTracker.getProgress() * 100)
+        setWordsPerMinute(wordTracker.getAverageWPM())
+      }
+      wordTrackerRef.current = wordTracker
+      wordTracker.start()
 
-      const matcher = createWordMatcher(scriptWords)
+      const matcher = new WordMatcher(scriptWords)
       matcherRef.current = matcher
 
-      console.log('[START] Connecting to Gemini Live...')
-      const session = await createGeminiSession(
+      const posTracker = new PositionTracker(apiKey, scriptWords, handleFlashUpdate)
+      posTrackerRef.current = posTracker
+      posTracker.start()
+
+      const session = await createGeminiLiveSession(
         apiKey,
         script,
-        handleTranscription,
+        (text) => {
+          posTracker.addTranscription(text)
+          const idx = matcher.addChunk(text)
+          if (idx !== null) {
+            feedSpeakerPosition(idx)
+          }
+        },
+        (coachingText) => {
+          addCoaching('encouragement', coachingText)
+        },
         (err) => {
-          console.error('[GEMINI] Session error:', err.message)
-          setError(err.message)
+          // Don't show error for normal close — session can be reconnected
+          if (!err.message.includes('1000')) {
+            console.error('[LIVE] Error:', err.message)
+            setError(err.message)
+          }
         },
       )
       sessionRef.current = session
 
-      let audioChunkCount = 0
+      let chunkCount = 0
       audio.onData = (base64) => {
-        audioChunkCount++
-        if (audioChunkCount % 20 === 1) {
-          console.log(`[AUDIO] Sending chunk #${audioChunkCount} (${base64.length} chars base64)`)
+        chunkCount++
+        if (chunkCount % 50 === 1) {
+          console.log(`[AUDIO] Chunk #${chunkCount}`)
         }
         try {
           session.sendRealtimeInput({
             audio: { data: base64, mimeType: 'audio/pcm;rate=16000' },
           })
-        } catch (e) {
-          console.error('[AUDIO] Failed to send:', e)
+        } catch {
+          // Session may have closed, ignore send errors
         }
       }
 
@@ -145,13 +152,12 @@ export function useTeleprompterSession() {
       }, 1000)
 
       setPhase('reading')
-      console.log('[START] Session fully started')
     } catch (err) {
       console.error('[START] Failed:', err)
       setError(err instanceof Error ? err.message : 'Connection failed')
       setPhase('idle')
     }
-  }, [handleTranscription])
+  }, [handleFlashUpdate, feedSpeakerPosition, addCoaching])
 
   const pause = useCallback(() => {
     audioRef.current?.pause()
@@ -166,7 +172,8 @@ export function useTeleprompterSession() {
   const stop = useCallback(() => {
     audioRef.current?.stop()
     audioRef.current = null
-    trackerRef.current?.stop()
+    wordTrackerRef.current?.stop()
+    posTrackerRef.current?.stop()
     sessionRef.current?.close()
     sessionRef.current = null
 
@@ -179,7 +186,7 @@ export function useTeleprompterSession() {
 
     setAnalytics({
       totalDurationSeconds: Math.round(elapsed),
-      averageWPM: trackerRef.current?.getAverageWPM() ?? 0,
+      averageWPM: wordTrackerRef.current?.getAverageWPM() ?? 0,
       paceOverTime: paceHistoryRef.current,
       fillerWords: [],
       offScriptMoments: [],
@@ -188,8 +195,9 @@ export function useTeleprompterSession() {
         .map((m) => m.message),
     })
 
-    trackerRef.current = null
+    wordTrackerRef.current = null
     matcherRef.current = null
+    posTrackerRef.current = null
     setVolume(0)
     setIsPaused(false)
     setPhase('finished')
@@ -207,7 +215,8 @@ export function useTeleprompterSession() {
   useEffect(() => {
     return () => {
       audioRef.current?.stop()
-      trackerRef.current?.stop()
+      wordTrackerRef.current?.stop()
+      posTrackerRef.current?.stop()
       sessionRef.current?.close()
       if (timerRef.current) clearInterval(timerRef.current)
     }

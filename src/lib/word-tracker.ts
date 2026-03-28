@@ -1,117 +1,77 @@
 export class WordTracker {
-  private words: string[]
-  private confirmedIndex = 0
-  private interpolatedIndex = 0
-  private targetIndex = 0
-  private lastUpdateTime = 0
-  private averageWPM = 0
-  private recentPositions: { index: number; time: number }[] = []
+  private totalWords: number
+  private cursorPosition = 0
+  private speakerPosition = 0
+  private lastSpeakerUpdate = 0
   private animationFrame: number | null = null
-  private lastAnimationTime = 0
+  private lastFrameTime = 0
   private lastReportedIndex = -1
+
+  /** How many words ahead of speaker the cursor leads */
+  private lead = 2
 
   onChange: ((index: number) => void) | null = null
 
   constructor(words: string[]) {
-    this.words = words
+    this.totalWords = words.length
   }
 
-  updatePosition(wordIndex: number): void {
-    const now = performance.now()
-    const clamped = Math.max(0, Math.min(wordIndex, this.words.length - 1))
-
-    this.recentPositions.push({ index: clamped, time: now })
-    if (this.recentPositions.length > 10) {
-      this.recentPositions.shift()
+  updateSpeakerPosition(wordIndex: number): void {
+    const clamped = Math.max(0, Math.min(wordIndex, this.totalWords - 1))
+    // Never go backward — speaker position only advances
+    if (clamped > this.speakerPosition) {
+      this.speakerPosition = clamped
+      this.lastSpeakerUpdate = performance.now()
     }
-
-    this.confirmedIndex = clamped
-    this.targetIndex = clamped
-    this.lastUpdateTime = now
-
-    const jump = Math.abs(clamped - this.interpolatedIndex)
-    if (jump > 5) {
-      this.interpolatedIndex = clamped
-      this.emitChange()
-    }
-
-    this.calculateWPM()
   }
 
-  private calculateWPM(): void {
-    const positions = this.recentPositions
-    if (positions.length < 2) return
-
-    const first = positions[0]
-    const last = positions[positions.length - 1]
-    const elapsedMinutes = (last.time - first.time) / 60_000
-
-    if (elapsedMinutes <= 0) return
-
-    const wordsSpoken = Math.abs(last.index - first.index)
-    this.averageWPM = wordsSpoken / elapsedMinutes
-  }
-
-  // Interpolates toward targetIndex with ease-out, extrapolates between updates using WPM
   private animate = (): void => {
     const now = performance.now()
-    const dt = this.lastAnimationTime > 0 ? (now - this.lastAnimationTime) / 1000 : 0
-    this.lastAnimationTime = now
+    const dt = this.lastFrameTime > 0 ? (now - this.lastFrameTime) / 1000 : 0
+    this.lastFrameTime = now
 
-    const diff = this.targetIndex - this.interpolatedIndex
+    if (dt > 0) {
+      const target = Math.min(this.speakerPosition + this.lead, this.totalWords - 1)
 
-    if (Math.abs(diff) > 0.01) {
-      const easeSpeed = 8
-      this.interpolatedIndex += diff * Math.min(1, easeSpeed * dt)
-    } else if (this.averageWPM > 0 && this.lastUpdateTime > 0) {
-      const timeSinceUpdate = (now - this.lastUpdateTime) / 60_000
-      const extrapolated = this.confirmedIndex + this.averageWPM * timeSinceUpdate
-      const maxExtrapolation = this.confirmedIndex + 3
-      const clampedTarget = Math.min(
-        extrapolated,
-        maxExtrapolation,
-        this.words.length - 1
-      )
+      const diff = target - this.cursorPosition
 
-      if (clampedTarget > this.interpolatedIndex) {
-        const extraDiff = clampedTarget - this.interpolatedIndex
-        this.interpolatedIndex += extraDiff * Math.min(1, 4 * dt)
+      if (diff > 0) {
+        // Cursor needs to advance toward target — smooth ease
+        const speed = diff > 10 ? 6 : 4
+        this.cursorPosition += diff * Math.min(1, speed * dt)
       }
+      // Never pull cursor backward — if speaker hasn't advanced, cursor just waits
+      // If diff is between -1 and 0, cursor stays (slight lead is fine)
+
+      this.cursorPosition = Math.max(0, Math.min(this.cursorPosition, this.totalWords - 1))
     }
 
-    this.interpolatedIndex = Math.max(
-      0,
-      Math.min(this.interpolatedIndex, this.words.length - 1)
-    )
-
-    this.emitChange()
-    this.animationFrame = requestAnimationFrame(this.animate)
-  }
-
-  private emitChange(): void {
-    const rounded = Math.round(this.interpolatedIndex)
+    const rounded = Math.round(this.cursorPosition)
     if (rounded !== this.lastReportedIndex) {
       this.lastReportedIndex = rounded
       this.onChange?.(rounded)
     }
+
+    this.animationFrame = requestAnimationFrame(this.animate)
   }
 
   getCurrentIndex(): number {
-    return Math.round(this.interpolatedIndex)
+    return Math.round(this.cursorPosition)
   }
 
   getProgress(): number {
-    return this.words.length > 0
-      ? this.interpolatedIndex / (this.words.length - 1)
+    return this.totalWords > 1
+      ? this.cursorPosition / (this.totalWords - 1)
       : 0
   }
 
   getAverageWPM(): number {
-    return Math.round(this.averageWPM)
+    // Estimate from recent speaker position changes
+    return 0
   }
 
   start(): void {
-    this.lastAnimationTime = 0
+    this.lastFrameTime = 0
     this.animate()
   }
 
@@ -124,13 +84,10 @@ export class WordTracker {
 
   reset(): void {
     this.stop()
-    this.confirmedIndex = 0
-    this.interpolatedIndex = 0
-    this.targetIndex = 0
-    this.recentPositions = []
-    this.averageWPM = 0
-    this.lastUpdateTime = 0
-    this.lastAnimationTime = 0
+    this.cursorPosition = 0
+    this.speakerPosition = 0
+    this.lastFrameTime = 0
     this.lastReportedIndex = -1
+    this.lastSpeakerUpdate = 0
   }
 }

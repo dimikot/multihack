@@ -1,14 +1,14 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { workos, clientId } from '@/lib/workos'
+import { getWorkOS, getClientId } from '@/lib/workos'
 import { clearSession } from '@/lib/session'
 
 export async function signIn() {
-  const authorizationUrl = workos.userManagement.getAuthorizationUrl({
+  const authorizationUrl = getWorkOS().userManagement.getAuthorizationUrl({
     provider: 'authkit',
     redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-    clientId,
+    clientId: getClientId(),
   })
   redirect(authorizationUrl)
 }

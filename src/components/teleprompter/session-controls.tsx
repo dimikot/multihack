@@ -1,6 +1,6 @@
 "use client"
 
-import { Pause, Play, Square, RotateCcw } from "lucide-react"
+import { Pause, Play, Square, RotateCcw, Minus, Plus } from "lucide-react"
 
 interface SessionControlsProps {
   isIdle: boolean
@@ -10,6 +10,8 @@ interface SessionControlsProps {
   elapsedSeconds: number
   wordsPerMinute: number
   progress: number
+  fontSize: number
+  onFontSizeChange: (size: number) => void
   onStart: () => void
   onPause: () => void
   onResume: () => void
@@ -31,6 +33,8 @@ export function SessionControls({
   elapsedSeconds,
   wordsPerMinute,
   progress,
+  fontSize,
+  onFontSizeChange,
   onStart,
   onPause,
   onResume,
@@ -42,10 +46,25 @@ export function SessionControls({
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-6 text-sm text-zinc-400">
+        <div className="flex items-center gap-4 text-sm text-zinc-400">
           <span className="font-mono">{formatTime(elapsedSeconds)}</span>
           <span>{Math.round(wordsPerMinute)} WPM</span>
           <span>{Math.round(progress)}%</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onFontSizeChange(Math.max(24, fontSize - 8))}
+              className="rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+            >
+              <Minus className="size-3.5" />
+            </button>
+            <span className="w-8 text-center text-xs font-mono">{fontSize}</span>
+            <button
+              onClick={() => onFontSizeChange(Math.min(120, fontSize + 8))}
+              className="rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

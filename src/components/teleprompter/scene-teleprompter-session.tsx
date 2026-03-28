@@ -32,9 +32,19 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
     stop,
     reset,
     restart,
+    jumpToWord,
   } = useTeleprompterSession()
 
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [fontSize, setFontSize] = useState(() => {
+    if (typeof window === 'undefined') return 72
+    return Number(localStorage.getItem('teleprompter-font-size') ?? 72)
+  })
+
+  const handleFontSizeChange = useCallback((size: number) => {
+    setFontSize(size)
+    localStorage.setItem('teleprompter-font-size', String(size))
+  }, [])
 
   const handlePlay = useCallback(() => {
     if (phase === 'idle') start(script)
@@ -87,6 +97,8 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
         words={phase === 'idle' ? script.trim().split(/\s+/) : words}
         currentIndex={phase === 'idle' ? -1 : currentWordIndex}
         progress={progress}
+        fontSize={fontSize}
+        onWordClick={phase === 'reading' ? jumpToWord : undefined}
       />
 
       <button
@@ -115,6 +127,8 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
         elapsedSeconds={elapsedSeconds}
         wordsPerMinute={wordsPerMinute}
         progress={progress}
+        fontSize={fontSize}
+        onFontSizeChange={handleFontSizeChange}
         onStart={handlePlay}
         onPause={pause}
         onResume={resume}

@@ -88,11 +88,9 @@ export function useTeleprompterSession() {
         (text) => {
           const idx = matcher.addChunk(text)
           if (idx !== null) {
+            console.log('[MATCH] Index:', idx, '=', scriptWords[idx])
             wordTracker.updateSpeakerPosition(idx)
           }
-        },
-        (coachingText) => {
-          addCoaching('encouragement', coachingText)
         },
         (err) => {
           if (!err.message.includes('1000')) {
@@ -173,6 +171,13 @@ export function useTeleprompterSession() {
     setPhase('finished')
   }, [])
 
+  const jumpToWord = useCallback((index: number) => {
+    if (phase !== 'reading') return
+    wordTrackerRef.current?.jumpTo(index)
+    matcherRef.current?.setPosition(index)
+    setCurrentWordIndex(index)
+  }, [phase])
+
   const reset = useCallback(() => {
     setPhase('idle')
     setAnalytics(null)
@@ -218,5 +223,6 @@ export function useTeleprompterSession() {
     stop,
     reset,
     restart,
+    jumpToWord,
   }
 }

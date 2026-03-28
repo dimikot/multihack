@@ -1,10 +1,12 @@
-import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/session'
-import { signIn, signOut } from './actions'
+import { signIn } from './actions'
 import { Button } from '@/components/ui/button'
 
 export default async function Home() {
   const user = await getSession()
+
+  if (user) redirect('/scenes')
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-8">
@@ -22,28 +24,11 @@ export default async function Home() {
             voluptas sit aspernatur aut odit aut fugit.
           </p>
 
-          {user ? (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-muted-foreground">
-                Signed in as{' '}
-                <span className="font-medium text-foreground">{user.email}</span>
-              </p>
-              <div className="flex gap-3">
-                <Link href="/scenes">
-                  <Button size="lg">Go to Scenes</Button>
-                </Link>
-                <form action={signOut}>
-                  <Button variant="outline" size="lg" type="submit">Log out</Button>
-                </form>
-              </div>
-            </div>
-          ) : (
-            <form action={signIn}>
-              <Button type="submit" size="lg">
-                Log in with WorkOS
-              </Button>
-            </form>
-          )}
+          <form action={signIn}>
+            <Button type="submit" size="lg">
+              Log in with WorkOS
+            </Button>
+          </form>
         </div>
 
         {/* Right side — clipart */}

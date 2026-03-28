@@ -7,9 +7,11 @@ interface WordDisplayProps {
   words: string[]
   currentIndex: number
   progress: number
+  fontSize?: number
+  onWordClick?: (index: number) => void
 }
 
-export function WordDisplay({ words, currentIndex, progress }: WordDisplayProps) {
+export function WordDisplay({ words, currentIndex, progress, fontSize = 72, onWordClick }: WordDisplayProps) {
   const currentWordRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export function WordDisplay({ words, currentIndex, progress }: WordDisplayProps)
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-20 bg-gradient-to-t from-zinc-950 to-transparent" />
 
       <div className="h-full overflow-y-auto px-8 py-24 md:px-16 lg:px-24">
-        <p className="mx-auto max-w-4xl text-6xl leading-relaxed md:text-7xl">
+        <p className="mx-auto max-w-4xl leading-relaxed" style={{ fontSize: `${fontSize}px` }}>
           {words.map((word, index) => {
             const isCurrent = index === currentIndex
             const isSpoken = index < currentIndex
@@ -47,11 +49,13 @@ export function WordDisplay({ words, currentIndex, progress }: WordDisplayProps)
               <span
                 key={index}
                 ref={isCurrent ? currentWordRef : undefined}
+                onClick={() => onWordClick?.(index)}
                 className={cn(
                   'inline-block px-1 py-0.5 transition-all duration-300',
                   isSpoken && 'text-zinc-600',
                   isCurrent && 'scale-105 font-bold text-white',
-                  !isSpoken && !isCurrent && 'text-zinc-400'
+                  !isSpoken && !isCurrent && 'text-zinc-400',
+                  onWordClick && 'cursor-pointer hover:opacity-80'
                 )}
                 style={
                   isCurrent

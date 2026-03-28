@@ -25,6 +25,14 @@ export class WordTracker {
     }
   }
 
+  jumpTo(wordIndex: number): void {
+    const clamped = Math.max(0, Math.min(wordIndex, this.totalWords - 1))
+    this.speakerPosition = clamped
+    this.cursorPosition = clamped
+    this.lastSpeakerUpdate = performance.now()
+    this.lastReportedIndex = -1
+  }
+
   private animate = (): void => {
     const now = performance.now()
     const dt = this.lastFrameTime > 0 ? (now - this.lastFrameTime) / 1000 : 0

@@ -16,7 +16,7 @@ export class AudioCapture {
         channelCount: 1,
         autoGainControl: true,
         echoCancellation: true,
-        noiseSuppression: true,
+        noiseSuppression: false,
       },
     })
     console.log('[AUDIO] Microphone granted')
@@ -31,6 +31,9 @@ export class AudioCapture {
 
     this.source = this.context.createMediaStreamSource(this.stream)
     this.workletNode = new AudioWorkletNode(this.context, 'audio-recorder-worklet')
+
+    const boost = this.context.createGain()
+    boost.gain.value = 5.0
 
     const silentSink = this.context.createGain()
     silentSink.gain.value = 0
@@ -54,7 +57,8 @@ export class AudioCapture {
       this.onData?.(base64)
     }
 
-    this.source.connect(this.workletNode)
+    this.source.connect(boost)
+    boost.connect(this.workletNode)
     this.workletNode.connect(silentSink)
     silentSink.connect(this.context.destination)
     this.paused = false

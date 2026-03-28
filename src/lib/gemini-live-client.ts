@@ -1,6 +1,8 @@
 import {
   GoogleGenAI,
   Modality,
+  StartSensitivity,
+  EndSensitivity,
   type Session,
   type LiveServerMessage,
 } from '@google/genai'
@@ -8,7 +10,6 @@ import {
 export async function createGeminiLiveSession(
   apiKey: string,
   onInputTranscription: (text: string) => void,
-  onCoaching: (text: string) => void,
   onError: (error: Error) => void,
 ): Promise<Session> {
   const ai = new GoogleGenAI({ apiKey })
@@ -23,14 +24,21 @@ export async function createGeminiLiveSession(
     setupResolve()
   }, 10000)
 
-  let outputBuffer = ''
-
   const session = await ai.live.connect({
     model: 'gemini-2.5-flash-native-audio-latest',
     config: {
       responseModalities: [Modality.AUDIO],
       inputAudioTranscription: {},
       outputAudioTranscription: {},
+      realtimeInputConfig: {
+        automaticActivityDetection: {
+          startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
+          endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
+          prefixPaddingMs: 0,
+          silenceDurationMs: 3000,
+        },
+      },
+      systemInstruction: 'You are listening to a speaker. Just listen silently.',
     },
     callbacks: {
       onopen: () => console.log('[LIVE] WebSocket opened'),
@@ -43,17 +51,9 @@ export async function createGeminiLiveSession(
         }
 
         if (msg.serverContent?.inputTranscription?.text) {
-          onInputTranscription(msg.serverContent.inputTranscription.text)
-        }
-
-        if (msg.serverContent?.outputTranscription?.text) {
-          outputBuffer += msg.serverContent.outputTranscription.text
-        }
-
-        if (msg.serverContent?.turnComplete && outputBuffer) {
-          console.log('[LIVE] Coaching:', outputBuffer)
-          onCoaching(outputBuffer.trim())
-          outputBuffer = ''
+          const text = msg.serverContent.inputTranscription.text
+          console.log('[LIVE] User said:', text)
+          onInputTranscription(text)
         }
       },
       onerror: (e: ErrorEvent) => {

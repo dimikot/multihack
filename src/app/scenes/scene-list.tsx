@@ -1,18 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import {
-  Search,
-  SlidersHorizontal,
-  LayoutGrid,
-  List,
-  MoreHorizontal,
-  X,
-} from 'lucide-react'
+import { Search, SlidersHorizontal, LayoutGrid, List, MoreHorizontal, X } from 'lucide-react'
 import { SceneForm } from '@/components/scene-form'
-import { createScene, deleteScene } from './actions'
+import { createScene, updateScene, deleteScene } from './actions'
+import Link from 'next/link'
 
 interface Scene {
   id: number
@@ -28,28 +20,51 @@ function formatDate(date: Date) {
   }).format(new Date(date))
 }
 
-function sceneTitle(message: string) {
-  const firstLine = message.split('\n')[0].trim()
-  return firstLine.length > 40 ? firstLine.slice(0, 40) + '...' : firstLine
-}
-
-function sceneSubtitle(message: string) {
-  const words = message.replace(/\n/g, ' ').trim()
-  return words.length > 60 ? words.slice(0, 60) + '...' : words
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        className="relative flex w-full max-w-2xl flex-col rounded-2xl border border-accents-2 bg-white p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+          <button
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-lg text-accents-4 hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
 }
 
 export function SceneList({ scenes }: { scenes: Scene[] }) {
-  const router = useRouter()
   const [query, setQuery] = useState('')
   const [activeMenu, setActiveMenu] = useState<number | null>(null)
   const [showNew, setShowNew] = useState(false)
+  const [editScene, setEditScene] = useState<Scene | null>(null)
 
   const filtered = scenes.filter((s) =>
     s.message.toLowerCase().includes(query.toLowerCase())
   )
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8" style={{ background: 'var(--page-bg)' }}>
       {/* Top bar */}
       <div className="mb-8 flex w-full items-center gap-2">
         <div className="relative flex-1">
@@ -58,7 +73,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
             placeholder="Search Scenes..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-10 w-full rounded-xl border border-accents-2 bg-background pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-accents-3 focus:border-accents-4"
+            className="h-10 w-full rounded-xl border border-accents-2 bg-white pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-accents-3 focus:border-accents-4"
           />
         </div>
         <button className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-accents-2 text-accents-5 hover:border-accents-4">
@@ -73,6 +88,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
           </button>
         </div>
         <button
+          type="button"
           onClick={() => setShowNew(true)}
           className="flex h-10 items-center rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-90"
         >
@@ -86,9 +102,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
       {/* Cards grid */}
       {filtered.length === 0 ? (
         <p className="text-sm text-accents-4">
-          {scenes.length === 0
-            ? 'No scenes yet.'
-            : 'No scenes match your search.'}
+          {scenes.length === 0 ? 'No scenes yet.' : 'No scenes match your search.'}
         </p>
       ) : (
         <div className="grid w-full auto-rows-[280px] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -96,7 +110,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
             <Link
               key={scene.id}
               href={`/scenes/${scene.id}`}
-              className="group relative flex flex-col overflow-hidden rounded-xl border border-accents-2 bg-background p-5 no-underline transition-shadow hover:shadow-md"
+              className="group relative flex flex-col overflow-hidden rounded-xl border border-accents-2 bg-white p-5 no-underline transition-shadow hover:shadow-md"
             >
               {activeMenu === scene.id ? (
                 <div
@@ -107,7 +121,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
                     className="w-full rounded-lg px-4 py-2.5 text-center text-sm font-medium text-foreground hover:bg-accents-1"
                     onClick={() => {
                       setActiveMenu(null)
-                      router.push(`/scenes/${scene.id}/edit`)
+                      setEditScene(scene)
                     }}
                   >
                     Edit
@@ -148,7 +162,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
                     {scene.message}
                   </p>
 
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background via-background/80 to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/80 to-transparent" />
                 </>
               )}
             </Link>
@@ -157,28 +171,18 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
       )}
 
       {showNew && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={() => setShowNew(false)}
-        >
-          <div
-            className="relative flex w-full max-w-2xl flex-col rounded-2xl border border-accents-2 bg-background p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">
-                New Scene
-              </h2>
-              <button
-                onClick={() => setShowNew(false)}
-                className="flex size-8 items-center justify-center rounded-lg text-accents-4 hover:text-foreground"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-            <SceneForm action={createScene} />
-          </div>
-        </div>
+        <Modal title="New Scene" onClose={() => setShowNew(false)}>
+          <SceneForm action={createScene} />
+        </Modal>
+      )}
+
+      {editScene && (
+        <Modal title="Edit Scene" onClose={() => setEditScene(null)}>
+          <SceneForm
+            action={updateScene.bind(null, editScene.id)}
+            defaultValue={editScene.message}
+          />
+        </Modal>
       )}
     </div>
   )

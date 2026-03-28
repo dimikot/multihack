@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { Info } from 'lucide-react'
 import { useTeleprompterSession } from '@/hooks/use-teleprompter-session'
 import { WordDisplay } from './word-display'
@@ -57,24 +56,9 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
     if (phase !== 'finished') setShowAnalytics(false)
   }, [phase])
 
-  if (phase === 'idle') {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-8">
-        <p className="max-w-xl text-center text-lg leading-relaxed text-zinc-300 line-clamp-6">
-          {script}
-        </p>
-        <button
-          onClick={() => start(script)}
-          className="rounded-lg bg-blue-600 px-8 py-3 text-lg font-semibold text-white transition-colors hover:bg-blue-500"
-        >
-          Start Reading
-        </button>
-        <Link href="/scenes" className="text-sm text-zinc-500 hover:text-zinc-300">
-          ← Back to Scenes
-        </Link>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (phase === 'idle') start(script)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === 'connecting') {
     return (

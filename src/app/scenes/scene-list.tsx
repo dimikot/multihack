@@ -2,15 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search,
   SlidersHorizontal,
   LayoutGrid,
   List,
-  ChevronDown,
   MoreHorizontal,
+  X,
 } from 'lucide-react'
-import { deleteScene } from './actions'
+import { SceneForm } from '@/components/scene-form'
+import { createScene, deleteScene } from './actions'
 
 interface Scene {
   id: number
@@ -37,8 +39,10 @@ function sceneSubtitle(message: string) {
 }
 
 export function SceneList({ scenes }: { scenes: Scene[] }) {
+  const router = useRouter()
   const [query, setQuery] = useState('')
   const [activeMenu, setActiveMenu] = useState<number | null>(null)
+  const [showNew, setShowNew] = useState(false)
 
   const filtered = scenes.filter((s) =>
     s.message.toLowerCase().includes(query.toLowerCase())
@@ -68,12 +72,12 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
             <List className="size-4" />
           </button>
         </div>
-        <Link href="/scenes/new">
-          <button className="flex h-10 items-center gap-1.5 rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-90">
-            Add New...
-            <ChevronDown className="size-3.5" />
-          </button>
-        </Link>
+        <button
+          onClick={() => setShowNew(true)}
+          className="flex h-10 items-center rounded-xl bg-foreground px-4 text-sm font-medium text-background hover:opacity-90"
+        >
+          Add New
+        </button>
       </div>
 
       {/* Heading */}
@@ -99,13 +103,15 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
                   className="flex flex-1 flex-col items-center justify-center gap-3"
                   onClick={(e) => e.preventDefault()}
                 >
-                  <Link
-                    href={`/scenes/${scene.id}/edit`}
-                    className="w-full rounded-lg px-4 py-2.5 text-center text-sm font-medium text-foreground no-underline hover:bg-accents-1"
-                    onClick={() => setActiveMenu(null)}
+                  <button
+                    className="w-full rounded-lg px-4 py-2.5 text-center text-sm font-medium text-foreground hover:bg-accents-1"
+                    onClick={() => {
+                      setActiveMenu(null)
+                      router.push(`/scenes/${scene.id}/edit`)
+                    }}
                   >
                     Edit
-                  </Link>
+                  </button>
                   <form action={() => deleteScene(scene.id)} className="w-full">
                     <button
                       type="submit"
@@ -147,6 +153,31 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
               )}
             </Link>
           ))}
+        </div>
+      )}
+
+      {showNew && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setShowNew(false)}
+        >
+          <div
+            className="relative flex w-full max-w-2xl flex-col rounded-2xl border border-accents-2 bg-background p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">
+                New Scene
+              </h2>
+              <button
+                onClick={() => setShowNew(false)}
+                className="flex size-8 items-center justify-center rounded-lg text-accents-4 hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <SceneForm action={createScene} />
+          </div>
         </div>
       )}
     </div>

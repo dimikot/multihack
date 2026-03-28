@@ -10,7 +10,7 @@ services:
     build_command: npm install --include=dev
     run_command: npm run dev
     environment_slug: node-js
-    instance_size_slug: apps-s-1vcpu-2gb
+    instance_size_slug: apps-d-4vcpu-8gb
     instance_count: 1
     http_port: 3000
     envs:
@@ -25,7 +25,7 @@ services:
         type: SECRET
       - key: NEXT_PUBLIC_APP_URL
         scope: RUN_AND_BUILD_TIME
-        value: https://multihack.ondigitalocean.app
+        value: https://multihack-3jjbk.ondigitalocean.app
       - key: NODE_ENV
         scope: RUN_AND_BUILD_TIME
         value: development

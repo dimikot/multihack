@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
 
   if (!code) {
-    return NextResponse.redirect(new URL('/?error=no_code', request.url))
+    return NextResponse.redirect(new URL('/?error=no_code', request.nextUrl))
   }
 
   try {
@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
       lastName: user.lastName,
     })
 
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/', request.nextUrl))
   } catch {
-    return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
+    return NextResponse.redirect(new URL('/?error=auth_failed', request.nextUrl))
   }
 }

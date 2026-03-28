@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  allowedDevOrigins: ['multihack-3jjbk.ondigitalocean.app'],
 };
 
 export default nextConfig;

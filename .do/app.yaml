@@ -1,10 +1,6 @@
 name: multihack
 region: nyc
 
-domains:
-  - domain: multihack.ondigitalocean.app
-    type: PRIMARY
-
 services:
   - name: web
     github:

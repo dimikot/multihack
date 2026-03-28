@@ -1,6 +1,10 @@
 name: multihack
 region: nyc
 
+domains:
+  - domain: multihack.ondigitalocean.app
+    type: PRIMARY
+
 services:
   - name: web
     github:
@@ -29,6 +33,3 @@ services:
       - key: NODE_ENV
         scope: RUN_AND_BUILD_TIME
         value: development
-    domains:                                                                                                                                                            
-      - domain: multihack.ondigitalocean.app                                                                                                                            
-        type: PRIMARY

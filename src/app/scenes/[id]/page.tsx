@@ -1,5 +1,7 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { eq, and } from 'drizzle-orm'
+import { ArrowLeft } from 'lucide-react'
 import { db } from '@/db'
 import { scenes } from '@/db/schema'
 import { requireAuth } from '@/lib/auth'
@@ -22,7 +24,13 @@ export default async function ScenePage({
   if (!scene) notFound()
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="relative min-h-screen bg-zinc-950 text-zinc-100">
+      <Link
+        href="/scenes"
+        className="absolute left-4 top-4 z-50 flex size-10 items-center justify-center rounded-full bg-white/10 text-zinc-300 backdrop-blur-sm transition-colors hover:bg-white/20 hover:text-white"
+      >
+        <ArrowLeft className="size-5" />
+      </Link>
       <SceneTeleprompterSession script={scene.message} />
     </div>
   )

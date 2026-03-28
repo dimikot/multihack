@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { Info } from 'lucide-react'
 import { useTeleprompterSession } from '@/hooks/use-teleprompter-session'
 import { WordDisplay } from './word-display'
@@ -37,6 +36,10 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
 
   const [showAnalytics, setShowAnalytics] = useState(false)
 
+  const handlePlay = useCallback(() => {
+    if (phase === 'idle') start(script)
+  }, [phase, start, script])
+
   const togglePause = useCallback(() => {
     if (phase !== 'reading') return
     isPaused ? resume() : pause()
@@ -47,34 +50,17 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
       if (e.code !== 'Space') return
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return
       e.preventDefault()
+      if (phase === 'idle') { handlePlay(); return }
       togglePause()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [togglePause])
+  }, [phase, handlePlay, togglePause])
 
   useEffect(() => {
     if (phase !== 'finished') setShowAnalytics(false)
   }, [phase])
 
-  if (phase === 'idle') {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-8">
-        <p className="max-w-xl text-center text-lg leading-relaxed text-zinc-300 line-clamp-6">
-          {script}
-        </p>
-        <button
-          onClick={() => start(script)}
-          className="rounded-lg bg-blue-600 px-8 py-3 text-lg font-semibold text-white transition-colors hover:bg-blue-500"
-        >
-          Start Reading
-        </button>
-        <Link href="/scenes" className="text-sm text-zinc-500 hover:text-zinc-300">
-          ← Back to Scenes
-        </Link>
-      </div>
-    )
-  }
 
   if (phase === 'connecting') {
     return (
@@ -97,7 +83,11 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
 
       <PaceGlow messages={coachingMessages} />
 
-      <WordDisplay words={words} currentIndex={currentWordIndex} progress={progress} />
+      <WordDisplay
+        words={phase === 'idle' ? script.trim().split(/\s+/) : words}
+        currentIndex={phase === 'idle' ? -1 : currentWordIndex}
+        progress={progress}
+      />
 
       <button
         onClick={() => phase === 'finished' && setShowAnalytics(true)}
@@ -118,12 +108,14 @@ export function SceneTeleprompterSession({ script }: SceneTeleprompterSessionPro
       )}
 
       <SessionControls
+        isIdle={phase === 'idle'}
         isReading={phase === 'reading' || phase === 'finished'}
         isFinished={phase === 'finished'}
         isPaused={isPaused}
         elapsedSeconds={elapsedSeconds}
         wordsPerMinute={wordsPerMinute}
         progress={progress}
+        onStart={handlePlay}
         onPause={pause}
         onResume={resume}
         onStop={stop}

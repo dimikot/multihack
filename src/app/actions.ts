@@ -9,6 +9,7 @@ export async function signIn() {
     provider: 'authkit',
     redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
     clientId: getClientId(),
+    prompt: 'login',
   })
   redirect(authorizationUrl)
 }

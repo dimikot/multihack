@@ -16,7 +16,7 @@ export async function createScene(formData: FormData) {
     .values({ userId: user.id, message })
     .returning({ id: scenes.id })
 
-  redirect(`/scenes/${scene.id}`)
+  redirect('/scenes')
 }
 
 export async function updateScene(id: number, formData: FormData) {
@@ -29,7 +29,7 @@ export async function updateScene(id: number, formData: FormData) {
     .set({ message })
     .where(and(eq(scenes.id, id), eq(scenes.userId, user.id)))
 
-  redirect(`/scenes/${id}`)
+  redirect('/scenes')
 }
 
 export async function deleteScene(id: number) {

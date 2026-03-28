@@ -6,7 +6,7 @@ import {
 } from '@google/genai'
 import type { GeminiPositionUpdate } from './types'
 
-export function buildSystemPrompt(script: string, language: string): string {
+export function buildSystemPrompt(script: string): string {
   const words = script.split(/\s+/)
   const numbered = words.map((w, i) => `[${i}] ${w}`).join(' ')
   const totalWords = words.length
@@ -41,13 +41,12 @@ ${numbered}
 - Respond with JSON ONLY. No markdown, no explanation, no extra text.
 - If you cannot determine the position, use the last known wordIndex.
 - Keep coaching messages short (under 10 words).
-- The speaker is reading in ${language}. All coaching messages must be in ${language}.`
+- Auto-detect the language from the script text and the speaker's voice. All coaching messages must be in that same language.`
 }
 
 export async function createGeminiSession(
   apiKey: string,
   script: string,
-  language: string,
   onMessage: (update: GeminiPositionUpdate) => void,
   onError: (error: Error) => void,
 ): Promise<Session> {
@@ -57,7 +56,7 @@ export async function createGeminiSession(
     model: 'gemini-live-2.5-flash-preview',
     config: {
       responseModalities: [Modality.TEXT],
-      systemInstruction: buildSystemPrompt(script, language),
+      systemInstruction: buildSystemPrompt(script),
     },
     callbacks: {
       onopen: () => console.log('Gemini Live connected'),

@@ -35,14 +35,3 @@ export interface SessionAnalytics {
 
 export type SessionPhase = 'idle' | 'connecting' | 'reading' | 'finished'
 
-export const SUPPORTED_LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'ru', name: 'Russian' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'fr', name: 'French' },
-  { code: 'de', name: 'German' },
-  { code: 'zh', name: 'Chinese' },
-  { code: 'ja', name: 'Japanese' },
-] as const
-
-export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]['code']

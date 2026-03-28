@@ -66,7 +66,7 @@ export function useTeleprompterSession() {
     }
   }, [])
 
-  const start = useCallback(async (script: string, language: string) => {
+  const start = useCallback(async (script: string) => {
     setPhase('connecting')
     setError(null)
 
@@ -104,7 +104,6 @@ export function useTeleprompterSession() {
       const session = await createGeminiSession(
         apiKey,
         script,
-        language,
         handleGeminiMessage,
         (err) => setError(err.message),
       )

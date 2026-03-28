@@ -8,7 +8,7 @@ services:
       branch: main
       deploy_on_push: false
     build_command: npm install --include=dev && npm run build
-    run_command: npm start
+    run_command: npm run dev
     environment_slug: node-js
     instance_size_slug: apps-s-1vcpu-0.5gb
     instance_count: 1

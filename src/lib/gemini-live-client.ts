@@ -4,83 +4,144 @@ import {
   type Session,
   type LiveServerMessage,
 } from '@google/genai'
-import type { GeminiPositionUpdate } from './types'
 
-export function buildSystemPrompt(script: string): string {
-  const words = script.split(/\s+/)
-  const numbered = words.map((w, i) => `[${i}] ${w}`).join(' ')
-  const totalWords = words.length
-  return `You are a real-time teleprompter coach. The speaker is reading a script aloud and you are listening to their audio. Your job is to track their position in the script and provide occasional coaching.
+export interface TranscriptionUpdate {
+  inputText: string
+  outputText: string | null
+}
 
-## Script (${totalWords} words total)
-${numbered}
+function buildSystemPrompt(script: string): string {
+  return `You are a real-time speech coach. The speaker is reading a script aloud. Listen and provide brief coaching feedback ONLY when needed.
 
-## Your Task
-1. Listen to the speaker's audio and determine which word they are currently on.
-2. Respond with ONLY valid JSON on every turn, no other text. Format:
-   {"wordIndex": <number>, "coaching": <object or null>}
+## Script
+${script}
 
-   Where coaching, when present, is:
-   {"type": "<coaching_type>", "message": "<short message>", "data": {}}
+## When to speak (at most once every 10 seconds):
+- Speaker is too slow (below 100 WPM for 10+ seconds) — say a brief encouragement to speed up
+- Speaker is too fast (above 180 WPM for 5+ seconds) — suggest slowing down
+- Speaker uses many filler words — gently point it out
+- Speaker deviates significantly from the script — mention they went off-script
+- Speaker reaches ~25%, 50%, 75%, 100% — brief encouragement
 
-   Valid coaching types: pace_slow, pace_fast, filler_word, off_script, back_on_script, encouragement, section_complete
+## Rules
+- MOSTLY STAY SILENT. Only speak when coaching is truly needed.
+- Keep messages under 10 words.
+- Speak in the same language as the script.
+- Do NOT repeat the script back. Do NOT narrate what the speaker is saying.`
+}
 
-3. wordIndex must be the 0-based index of the word the speaker most recently said or is currently saying.
+function normalizeWord(w: string): string {
+  return w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
+}
 
-## Coaching Rules
-- Provide coaching at most once every 5 seconds. Most responses should have "coaching": null.
-- pace_slow: speaker is significantly below 120 WPM for more than 10 seconds.
-- pace_fast: speaker is significantly above 180 WPM for more than 5 seconds.
-- filler_word: detect filler words yourself based on the speech language. Include {"word": "<detected>"} in data.
-- off_script: speaker deviated significantly from the script text.
-- back_on_script: speaker returned to the script after being off-script.
-- encouragement: speaker has been reading well for 30+ seconds. Keep it brief.
-- section_complete: speaker reached roughly 25%, 50%, 75%, or 100% of the script.
+export function createWordMatcher(scriptWords: string[]) {
+  const normalized = scriptWords.map(normalizeWord)
+  let currentIndex = 0
 
-## Important
-- Respond with JSON ONLY. No markdown, no explanation, no extra text.
-- If you cannot determine the position, use the last known wordIndex.
-- Keep coaching messages short (under 10 words).
-- Auto-detect the language from the script text and the speaker's voice. All coaching messages must be in that same language.`
+  return {
+    matchTranscription(text: string): number | null {
+      const spoken = text.trim().split(/\s+/).map(normalizeWord).filter(Boolean)
+      if (spoken.length === 0) return null
+
+      let matched = false
+      for (const word of spoken) {
+        if (!word) continue
+        const searchStart = currentIndex
+        const searchEnd = Math.min(currentIndex + 15, normalized.length)
+
+        for (let i = searchStart; i < searchEnd; i++) {
+          if (normalized[i] === word || normalized[i].startsWith(word) || word.startsWith(normalized[i])) {
+            currentIndex = i + 1
+            matched = true
+            break
+          }
+        }
+      }
+
+      return matched ? currentIndex - 1 : null
+    },
+
+    getCurrentIndex() {
+      return Math.max(0, currentIndex - 1)
+    },
+  }
 }
 
 export async function createGeminiSession(
   apiKey: string,
   script: string,
-  onMessage: (update: GeminiPositionUpdate) => void,
+  onTranscription: (update: TranscriptionUpdate) => void,
   onError: (error: Error) => void,
 ): Promise<Session> {
   const ai = new GoogleGenAI({ apiKey })
 
+  let setupResolve: () => void
+  const setupPromise = new Promise<void>((resolve) => {
+    setupResolve = resolve
+  })
+
+  const setupTimeout = setTimeout(() => {
+    console.warn('[GEMINI] setupComplete timeout — proceeding anyway')
+    setupResolve()
+  }, 10000)
+
   const session = await ai.live.connect({
-    model: 'gemini-live-2.5-flash-preview',
+    model: 'gemini-2.5-flash-native-audio-latest',
     config: {
-      responseModalities: [Modality.TEXT],
+      responseModalities: [Modality.AUDIO],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: { voiceName: 'Puck' },
+        },
+      },
       systemInstruction: buildSystemPrompt(script),
+      outputAudioTranscription: {},
+      inputAudioTranscription: {},
     },
     callbacks: {
-      onopen: () => console.log('Gemini Live connected'),
+      onopen: () => console.log('[GEMINI] WebSocket opened'),
       onmessage: (msg: LiveServerMessage) => {
-        const text = msg.serverContent?.modelTurn?.parts
-          ?.map((p) => p.text)
-          .filter(Boolean)
-          .join('')
+        if (msg.setupComplete) {
+          console.log('[GEMINI] Setup complete')
+          clearTimeout(setupTimeout)
+          setupResolve()
+          return
+        }
 
-        if (!text) return
+        if (msg.serverContent?.inputTranscription?.text) {
+          const text = msg.serverContent.inputTranscription.text
+          console.log('[GEMINI] Input:', text)
+          onTranscription({ inputText: text, outputText: null })
+        }
 
-        try {
-          const cleaned = text.replace(/```json\s*|```\s*/g, '').trim()
-          const parsed = JSON.parse(cleaned) as GeminiPositionUpdate
-          if (typeof parsed.wordIndex === 'number') {
-            onMessage(parsed)
-          }
-        } catch {
-          // Gemini occasionally returns non-JSON; silently skip
+        if (msg.serverContent?.outputTranscription?.text) {
+          const text = msg.serverContent.outputTranscription.text
+          console.log('[GEMINI] Output:', text)
+          onTranscription({ inputText: '', outputText: text })
+        }
+
+        if (msg.serverContent?.turnComplete) {
+          console.log('[GEMINI] Turn complete')
         }
       },
-      onerror: (e: ErrorEvent) => onError(new Error(e.message)),
+      onerror: (e: ErrorEvent) => {
+        console.error('[GEMINI] Error:', e)
+        onError(new Error(e.message || 'WebSocket error'))
+      },
+      onclose: (e: CloseEvent) => {
+        if (e.code === 1000) {
+          console.log('[GEMINI] Session ended normally')
+        } else {
+          console.error('[GEMINI] Closed:', e.code, e.reason)
+          onError(new Error(`Connection closed: ${e.code} ${e.reason}`))
+        }
+      },
     },
   })
+
+  console.log('[GEMINI] Waiting for setup...')
+  await setupPromise
+  console.log('[GEMINI] Ready')
 
   return session
 }

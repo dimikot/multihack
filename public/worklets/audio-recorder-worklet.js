@@ -1,35 +1,27 @@
-class AudioRecorderProcessor extends AudioWorkletProcessor {
+class AudioRecorderWorklet extends AudioWorkletProcessor {
   constructor() {
     super()
-    this._buffer = new Int16Array(4096)
-    this._offset = 0
+    this.buffer = new Int16Array(2048)
+    this.bufferWriteIndex = 0
   }
 
   process(inputs) {
-    const input = inputs[0]
-    if (!input || !input[0]) return true
-
-    const samples = input[0]
-    let sumSquares = 0
-
-    for (let i = 0; i < samples.length; i++) {
-      const s = samples[i]
-      sumSquares += s * s
-
-      const pcm = Math.max(-32768, Math.min(32767, Math.round(s * 0x7fff)))
-      this._buffer[this._offset++] = pcm
-
-      if (this._offset >= 4096) {
-        this.port.postMessage({ type: 'data', buffer: this._buffer.slice() })
-        this._offset = 0
+    if (inputs[0].length) {
+      const channel0 = inputs[0][0]
+      for (let i = 0; i < channel0.length; i++) {
+        const int16Value = Math.max(-32768, Math.min(32767, channel0[i] * 32768))
+        this.buffer[this.bufferWriteIndex++] = int16Value
+        if (this.bufferWriteIndex >= this.buffer.length) {
+          this.port.postMessage({
+            event: 'chunk',
+            data: this.buffer.slice(0, this.bufferWriteIndex).buffer,
+          })
+          this.bufferWriteIndex = 0
+        }
       }
     }
-
-    const rms = Math.sqrt(sumSquares / samples.length)
-    this.port.postMessage({ type: 'volume', level: Math.min(1, rms) })
-
     return true
   }
 }
 
-registerProcessor('audio-recorder-processor', AudioRecorderProcessor)
+registerProcessor('audio-recorder-worklet', AudioRecorderWorklet)

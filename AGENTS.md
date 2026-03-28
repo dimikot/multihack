@@ -8,6 +8,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 When running commands on your behalf, do not hardcode env secrets in the command line. Read them from .env.local, so the command line remains clean from secrets.
 
-# No Deployment after Changes!
+# DO NOT RUN GIT COMMANDS!
 
-After you make a change to the code, do NOT run git add and git commit, and do not not deploy. I will ask to deploy explicitly when needed.
+Never git add and never git commit your changes!
+
+# Do not deploy after each change!
+
+After you make a change to the code, do NOT deploy. I will ask to deploy explicitly when needed.

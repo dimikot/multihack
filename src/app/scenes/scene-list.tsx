@@ -115,7 +115,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
               {activeMenu === scene.id ? (
                 <div
                   className="flex flex-1 flex-col items-center justify-center gap-3"
-                  onClick={(e) => e.preventDefault()}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     className="w-full rounded-lg px-4 py-2.5 text-center text-sm font-medium text-foreground hover:bg-accents-1"
@@ -126,7 +126,7 @@ export function SceneList({ scenes }: { scenes: Scene[] }) {
                   >
                     Edit
                   </button>
-                  <form action={() => deleteScene(scene.id)} className="w-full">
+                  <form action={deleteScene.bind(null, scene.id)} className="w-full">
                     <button
                       type="submit"
                       className="w-full rounded-lg px-4 py-2.5 text-center text-sm font-medium text-[var(--geist-error)] hover:bg-red-50"

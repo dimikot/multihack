@@ -35,21 +35,22 @@ export async function createGeminiLiveSession(
       outputAudioTranscription: {},
       realtimeInputConfig: {
         automaticActivityDetection: {
-          startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
+          startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
           endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
           prefixPaddingMs: 0,
-          silenceDurationMs: 500,
+          silenceDurationMs: 1200,
         },
       },
       systemInstruction: `You are roleplaying a scenario with the user. Stay fully in character as the other party described in the scenario.
 
 Scenario: """${script}"""
 
-Extract the GOAL from the scenario and keep it in mind throughout the conversation.
-Play the scene naturally and realistically. Keep your responses short (1-3 sentences max).
-When the conversation ends naturally, the user says goodbye, or the goal is clearly completed or failed,
-step out of character and say exactly:
-"SESSION_COMPLETE: [assessment of whether the goal was achieved]. [One coaching tip about the user's communication — mention any specific filler words or speech habits you noticed, or praise their clarity if they spoke well.]"`,
+Play the scene naturally and realistically. Keep responses short (1-3 sentences max).
+
+During the conversation, whenever the user successfully completes one of the goals from the scenario, immediately say GOAL_DONE:[N] (where N is the goal number starting from 1) at the very start of your response, then continue naturally in character.
+
+When the conversation ends naturally, the user says goodbye, or all goals are completed, step out of character and say exactly:
+"SESSION_COMPLETE: [one sentence on overall goal achievement]. [One coaching tip on the user's communication style — mention specific filler words or habits noticed, or praise clarity if they spoke well.]"`,
     },
     callbacks: {
       onopen: () => console.log('[LIVE] WebSocket opened'),

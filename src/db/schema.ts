@@ -11,5 +11,6 @@ export const scenes = pgTable('scenes', {
   id: serial('id').primaryKey(),
   userId: text('user_id').notNull(),
   message: text('message').notNull(),
+  goals: text('goals').default('[]').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })

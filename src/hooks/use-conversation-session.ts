@@ -19,6 +19,7 @@ export function useConversationSession() {
   const [volume, setVolume] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [analytics, setAnalytics] = useState<SessionAnalytics | null>(null)
+  const [completedGoals, setCompletedGoals] = useState<Set<number>>(new Set())
 
   const sessionRef = useRef<Session | null>(null)
   const audioRef = useRef<AudioCapture | null>(null)
@@ -26,13 +27,13 @@ export function useConversationSession() {
   const nextPlayTimeRef = useRef(0)
   const startTimeRef = useRef(0)
   const userSecsRef = useRef(0)
-  const userSpeakingStartRef = useRef<number | null>(null)
   const userWordCountRef = useRef(0)
   const goalResultRef = useRef<string | null>(null)
   const stoppedRef = useRef(false)
-
   const messagesRef = useRef<ChatMessage[]>([])
-  const setMessagesSync = (msgs: ChatMessage[]) => {
+  const completedGoalsRef = useRef<Set<number>>(new Set())
+
+  const updateMessages = (msgs: ChatMessage[]) => {
     messagesRef.current = msgs
     setMessages(msgs)
   }
@@ -97,8 +98,9 @@ export function useConversationSession() {
     setMessages([])
     messagesRef.current = []
     setAnalytics(null)
+    setCompletedGoals(new Set())
+    completedGoalsRef.current = new Set()
     userSecsRef.current = 0
-    userSpeakingStartRef.current = null
     userWordCountRef.current = 0
     goalResultRef.current = null
     nextPlayTimeRef.current = 0
@@ -119,45 +121,55 @@ export function useConversationSession() {
         apiKey,
         script,
         (text) => {
-          // Track user speaking time
-          const now = Date.now()
-          if (userSpeakingStartRef.current === null) {
-            userSpeakingStartRef.current = now
-          }
-          userSecsRef.current += 0.5 // approximate per-chunk contribution
+          userSecsRef.current += 0.5
           userWordCountRef.current += text.trim().split(/\s+/).filter(Boolean).length
 
           const prev = messagesRef.current
           const last = prev[prev.length - 1]
+          const now = Date.now()
           if (last?.role === 'user') {
-            const updated = [...prev.slice(0, -1), { ...last, text: last.text + ' ' + text }]
-            setMessagesSync(updated)
+            updateMessages([...prev.slice(0, -1), { ...last, text: last.text + ' ' + text }])
           } else {
-            setMessagesSync([...prev, { id: crypto.randomUUID(), role: 'user', text, timestamp: now }])
+            updateMessages([...prev, { id: crypto.randomUUID(), role: 'user', text, timestamp: now }])
           }
         },
         (b64) => playChunk(b64),
         (text) => {
           const now = Date.now()
+
+          // Detect goal completions: GOAL_DONE:N
+          const goalMatches = [...text.matchAll(/GOAL_DONE:(\d+)/g)]
+          if (goalMatches.length > 0) {
+            const next = new Set(completedGoalsRef.current)
+            for (const m of goalMatches) {
+              next.add(Number(m[1]) - 1) // 0-indexed
+            }
+            completedGoalsRef.current = next
+            setCompletedGoals(new Set(next))
+          }
+
+          // Strip GOAL_DONE tags from displayed text
+          const cleanText = text.replace(/GOAL_DONE:\d+\s*/g, '').trim()
+
           if (text.includes('SESSION_COMPLETE:')) {
             const result = text.split('SESSION_COMPLETE:')[1]?.trim()
             goalResultRef.current = result ?? null
             stop()
             return
           }
+
+          if (!cleanText) return
+
           const prev = messagesRef.current
           const last = prev[prev.length - 1]
           if (last?.role === 'gemini') {
-            const updated = [...prev.slice(0, -1), { ...last, text: last.text + ' ' + text }]
-            setMessagesSync(updated)
+            updateMessages([...prev.slice(0, -1), { ...last, text: last.text + ' ' + cleanText }])
           } else {
-            setMessagesSync([...prev, { id: crypto.randomUUID(), role: 'gemini', text, timestamp: now }])
+            updateMessages([...prev, { id: crypto.randomUUID(), role: 'gemini', text: cleanText, timestamp: now }])
           }
         },
         (err) => {
-          if (!err.message.includes('1000')) {
-            setError(err.message)
-          }
+          if (!err.message.includes('1000')) setError(err.message)
         },
       )
       sessionRef.current = session
@@ -188,6 +200,8 @@ export function useConversationSession() {
     setAnalytics(null)
     setMessages([])
     messagesRef.current = []
+    setCompletedGoals(new Set())
+    completedGoalsRef.current = new Set()
     setError(null)
   }, [])
 
@@ -199,5 +213,5 @@ export function useConversationSession() {
     }
   }, [])
 
-  return { phase, messages, volume, error, analytics, start, stop, reset }
+  return { phase, messages, volume, error, analytics, completedGoals, start, stop, reset }
 }

@@ -69,7 +69,7 @@ export function SceneConversationSession({ script, goals }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
+    <div className="flex h-screen bg-zinc-950 overflow-hidden">
       {error && (
         <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg border border-red-500/40 bg-red-500/20 px-4 py-2 text-sm text-red-200 backdrop-blur-md">
           {error}
@@ -77,7 +77,7 @@ export function SceneConversationSession({ script, goals }: Props) {
       )}
 
       {/* Goals sidebar */}
-      <aside className="flex w-56 shrink-0 flex-col gap-3 border-r border-zinc-800 px-5 pb-8" style={{ paddingTop: '120px' }}>
+      <aside className="flex w-56 shrink-0 flex-col gap-3 px-5 pb-8 overflow-y-auto" style={{ paddingTop: '120px' }}>
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-500">Goals</p>
           <ul className="flex flex-col gap-3">
             {goals.map((goal, i) => {
@@ -94,6 +94,7 @@ export function SceneConversationSession({ script, goals }: Props) {
             })}
           </ul>
         </aside>
+      <div className="w-px shrink-0 bg-zinc-800" />
 
       {/* Chat area */}
       <div className="flex flex-1 flex-col">

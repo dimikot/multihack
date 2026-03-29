@@ -91,7 +91,7 @@ export function useConversationSession() {
     setPhase('finished')
   }, [])
 
-  const start = useCallback(async (script: string) => {
+  const start = useCallback(async (script: string, goals: string[] = []) => {
     stoppedRef.current = false
     setPhase('connecting')
     setError(null)
@@ -120,6 +120,7 @@ export function useConversationSession() {
       const session = await createGeminiLiveSession(
         apiKey,
         script,
+        goals,
         (text) => {
           userSecsRef.current += 0.5
           userWordCountRef.current += text.trim().split(/\s+/).filter(Boolean).length

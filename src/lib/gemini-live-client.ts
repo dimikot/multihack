@@ -10,6 +10,7 @@ import {
 export async function createGeminiLiveSession(
   apiKey: string,
   script: string,
+  goals: string[],
   onInputTranscription: (text: string) => void,
   onOutputAudio: (base64: string) => void,
   onOutputTranscription: (text: string) => void,
@@ -46,9 +47,12 @@ export async function createGeminiLiveSession(
 Scenario: """${script}"""
 
 Play the scene naturally and realistically. Keep responses short (1-3 sentences max).
+${goals.length > 0 ? `
+The user has these specific goals to achieve during the conversation:
+${goals.map((g, i) => `${i + 1}. ${g}`).join('\n')}
 
-During the conversation, whenever the user successfully completes one of the goals from the scenario, immediately say GOAL_DONE:[N] (where N is the goal number starting from 1) at the very start of your response, then continue naturally in character.
-
+Whenever the user successfully completes one of these goals, immediately say GOAL_DONE:N (where N is the goal number from the list above) at the very start of your response, then continue naturally in character. For example: "GOAL_DONE:1 Sure, I can help with that."
+` : ''}
 When the conversation ends naturally, the user says goodbye, or all goals are completed, step out of character and say exactly:
 "SESSION_COMPLETE: [one sentence on overall goal achievement]. [One coaching tip on the user's communication style — mention specific filler words or habits noticed, or praise clarity if they spoke well.]"`,
     },

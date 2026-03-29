@@ -57,7 +57,7 @@ export function SceneConversationSession({ script, goals }: Props) {
             </div>
           )}
           <button
-            onClick={() => start(script)}
+            onClick={() => start(script, goals)}
             className="flex h-14 items-center justify-center rounded-2xl bg-blue-600 text-base font-semibold text-white transition-all hover:bg-blue-500 active:scale-95"
           >
             Start Conversation →
